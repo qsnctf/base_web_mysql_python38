@@ -1,0 +1,9 @@
+version: "3"
+services:
+  challenges:
+    build: .
+    image: qsnctf/base_web_mysql_python38
+    ports:
+      - "80:80"
+    environment:
+      - FLAG=qsnctf{flag}

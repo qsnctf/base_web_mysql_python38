@@ -1,0 +1,46 @@
+#!/bin/sh
+
+mysql_ready() {
+    mysqladmin ping -h 127.0.0.1 -uping -pping > /dev/null 2>&1
+}
+
+run_mysql() {
+    /usr/bin/mysqld --user=root --skip-name-resolve --skip-networking=0 &
+}
+
+while !(mysql_ready)
+do
+    mysql_ready
+    if [ $? -ne 0 ]; then
+        run_mysql
+    fi
+    sleep 3s
+done
+
+
+if [[ -f /app/db.sql ]]; then
+    echo "[+] Init db.sql"
+    mysql -uroot -proot -e "source /app/db.sql"
+    rm -f /app/db.sql
+fi
+
+if [[ -f /flag.sh ]]; then
+    echo "[+] Init flag.sh"
+    source /flag.sh
+fi
+
+
+if [ -f /app/requirements.txt ]; then
+    pip install -r /app/requirements.txt -i https://mirror.nju.edu.cn/pypi/web/simple/ && rm -f /app/requirements.txt
+fi
+
+echo "Running..."
+
+while true
+do
+    mysql_ready
+    if [ $? -ne 0 ]; then
+        run_mysql
+    fi
+    gunicorn --chdir="/app" -w 2 -k gevent -b 0.0.0.0:80 --access-logfile - app:app
+done
